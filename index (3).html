@@ -1,0 +1,302 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>McDonald's Ordering Practice</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-yellow-100 flex flex-col items-center justify-center min-h-screen">
+  <!-- Role Selection -->
+  <div id="roleSelection" class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+    <h1 class="text-2xl font-bold text-center mb-6">Choose Your Role</h1>
+    <button id="customerButton" class="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 w-full mb-4">Play as Customer</button>
+    <button id="cashierButton" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 w-full">Play as Cashier</button>
+  </div>
+
+  <!-- Customer Mode -->
+  <div id="customerMode" class="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full hidden">
+    <div class="mb-6">
+      <video id="orderVideo" class="w-full rounded-lg" controls>
+        <source src="https://example.com/mcdonalds-order.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+      <button id="startButton" class="mt-4 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 w-full text-lg">
+        Start Ordering
+      </button>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="menu-item bg-gray-100 p-4 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition-all" data-audio="https://example.com/fries.mp3" data-text="I would like French fries without salt.">
+        <img src="https://images.unsplash.com/photo-1572188863110-46d7c92c2725" alt="French Fries" class="w-full h-40 object-cover rounded-lg mb-2">
+        <p class="font-semibold text-base">French Fries</p>
+        <p class="text-sm text-gray-600 hidden">I would like French fries without salt.</p>
+      </div>
+      <div class="menu-item bg-gray-100 p-4 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition-all" data-audio="https://example.com/salad.mp3" data-text="I would like a salad.">
+        <img src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd" alt="Salad" class="w-full h-40 object-cover rounded-lg mb-2">
+        <p class="font-semibold text-base">Salad</p>
+        <p class="text-sm text-gray-600 hidden">I would like a salad.</p>
+      </div>
+      <div class="menu-item bg-gray-100 p-4 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition-all" data-audio="https://example.com/burger.mp3" data-text="I would like a cheese burger.">
+        <img src="https://images.unsplash.com/photo-1568901341003-3fc58e8e2536" alt="Cheese Burger" class="w-full h-40 object-cover rounded-lg mb-2">
+        <p class="font-semibold text-base">Cheese Burger</p>
+        <p class="text-sm text-gray-600 hidden">I would like a cheese burger.</p>
+      </div>
+      <div class="menu-item bg-gray-100 p-4 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition-all" data-audio="https://example.com/pork.mp3" data-text="I would like a pork burger.">
+        <img src="https://images.unsplash.com/photo-1521305916504-4a1129bf8f3e" alt="Pork Burger" class="w-full h-40 object-cover rounded-lg mb-2">
+        <p class="font-semibold text-base">Pork Burger</p>
+        <p class="text-sm text-gray-600 hidden">I would like a pork burger.</p>
+      </div>
+      <div class="menu-item bg-gray-100 p-4 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition-all" data-audio="https://example.com/fried_chicken.mp3" data-text="I would like fried chicken.">
+        <img src="https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58" alt="Fried Chicken" class="w-full h-40 object-cover rounded-lg mb-2">
+        <p class="font-semibold text-base">Fried Chicken</p>
+        <p class="text-sm text-gray-600 hidden">I would like fried chicken.</p>
+      </div>
+      <div class="menu-item bg-gray-100 p-4 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition-all" data-audio="https://example.com/coffee.mp3" data-text="I would like a coffee.">
+        <img src="https://images.unsplash.com/photo-1512568400610-62da28bc8a13" alt="Coffee" class="w-full h-40 object-cover rounded-lg mb-2">
+        <p class="font-semibold text-base">Coffee</p>
+        <p class="text-sm text-gray-600 hidden">I would like a coffee.</p>
+      </div>
+    </div>
+    <audio id="menuAudio" class="hidden"></audio>
+    <div class="mt-4 flex space-x-4">
+      <button id="replayButton" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 w-full text-lg hidden">
+        Replay Audio
+      </button>
+      <button id="orderAgainButton" class="bg-yellow-600 text-white px-6 py-3 rounded-lg hover:bg-yellow-700 w-full text-lg hidden">
+        Order Again
+      </button>
+    </div>
+  </div>
+
+  <!-- Cashier Mode -->
+  <div id="cashierMode" class="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full hidden">
+    <h2 id="levelTitle" class="text-xl font-bold text-center mb-4">Level 1/6</h2>
+    <video id="cashierVideo" class="w-full rounded-lg mb-4" controls>
+      <source src="" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+    <p id="feedback" class="text-center text-lg mb-4"></p>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="menu-item bg-gray-100 p-4 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition-all" data-item="fries">
+        <img src="https://images.unsplash.com/photo-1572188863110-46d7c92c2725" alt="French Fries" class="w-full h-40 object-cover rounded-lg mb-2">
+        <p class="font-semibold text-base">French Fries</p>
+      </div>
+      <div class="menu-item bg-gray-100 p-4 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition-all" data-item="fries_no_salt">
+        <img src="https://images.unsplash.com/photo-1572188863110-46d7c92c2725" alt="French Fries (No Salt)" class="w-full h-40 object-cover rounded-lg mb-2">
+        <p class="font-semibold text-base">French Fries (No Salt)</p>
+      </div>
+      <div class="menu-item bg-gray-100 p-4 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition-all" data-item="salad_burger">
+        <img src="https://images.unsplash.com/photo-1568901341003-3fc58e8e2536" alt="Salad & Cheese Burger" class="w-full h-40 object-cover rounded-lg mb-2">
+        <p class="font-semibold text-base">Salad & Cheese Burger</p>
+      </div>
+      <div class="menu-item bg-gray-100 p-4 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition-all" data-item="pork">
+        <img src="https://images.unsplash.com/photo-1521305916504-4a1129bf8f3e" alt="Pork Burger" class="w-full h-40 object-cover rounded-lg mb-2">
+        <p class="font-semibold text-base">Pork Burger</p>
+      </div>
+      <div class="menu-item bg-gray-100 p-4 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition-all" data-item="fried_chicken">
+        <img src="https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58" alt="Fried Chicken" class="w-full h-40 object-cover rounded-lg mb-2">
+        <p class="font-semibold text-base">Fried Chicken</p>
+      </div>
+      <div class="menu-item bg-gray-100 p-4 rounded-lg text-center cursor-pointer hover:bg-gray-200 transition-all" data-item="coffee">
+        <img src="https://images.unsplash.com/photo-1512568400610-62da28bc8a13" alt="Coffee" class="w-full h-40 object-cover rounded-lg mb-2">
+        <p class="font-semibold text-base">Coffee</p>
+      </div>
+    </div>
+    <button id="nextLevelButton" class="mt-4 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 w-full text-lg hidden">
+      Next Level
+    </button>
+    <button id="restartButton" class="mt-4 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 w-full text-lg hidden">
+      Restart
+    </button>
+  </div>
+
+  <script>
+    const roleSelection = document.getElementById('roleSelection');
+    const customerMode = document.getElementById('customerMode');
+    const cashierMode = document.getElementById('cashierMode');
+    const customerButton = document.getElementById('customerButton');
+    const cashierButton = document.getElementById('cashierButton');
+    const startButton = document.getElementById('startButton');
+    const orderVideo = document.getElementById('orderVideo');
+    const menuItems = customerMode.querySelectorAll('.menu-item');
+    const menuAudio = document.getElementById('menuAudio');
+    const replayButton = document.getElementById('replayButton');
+    const orderAgainButton = document.getElementById('orderAgainButton');
+    const cashierItems = cashierMode.querySelectorAll('.menu-item');
+    const cashierVideo = document.getElementById('cashierVideo');
+    const levelTitle = document.getElementById('levelTitle');
+    const feedback = document.getElementById('feedback');
+    const nextLevelButton = document.getElementById('nextLevelButton');
+    const restartButton = document.getElementById('restartButton');
+
+    // Cashier Mode Levels
+    const levels = [
+      { video: 'https://example.com/customer_fries.mp4', correctItem: 'fries', text: 'Can you make it quick? I want French fries.' },
+      { video: 'https://example.com/customer_fries_no_salt.mp4', correctItem: 'fries_no_salt', text: 'I want French fries without salt.' },
+      { video: 'https://example.com/customer_salad_burger.mp4', correctItem: 'salad_burger', text: 'I want a salad and a cheese burger.' },
+      { video: 'https://example.com/customer_pork.mp4', correctItem: 'pork', text: 'I want a pork burger.' },
+      { video: 'https://example.com/customer_fried_chicken.mp4', correctItem: 'fried_chicken', text: 'I want fried chicken.' },
+      { video: 'https://example.com/customer_coffee.mp4', correctItem: 'coffee', text: 'I want a coffee.' }
+    ];
+    let currentLevel = 0;
+
+    // Role Selection
+    customerButton.addEventListener('click', () => {
+      roleSelection.classList.add('hidden');
+      customerMode.classList.remove('hidden');
+    });
+
+    cashierButton.addEventListener('click', () => {
+      roleSelection.classList.add('hidden');
+      cashierMode.classList.remove('hidden');
+      startLevel(currentLevel);
+    });
+
+    // Customer Mode
+    startButton.addEventListener('click', () => {
+      orderVideo.play();
+      startButton.classList.add('hidden');
+      menuItems.forEach(item => item.classList.remove('opacity-50', 'pointer-events-none'));
+      orderAgainButton.classList.remove('hidden');
+    });
+
+    menuItems.forEach(item => {
+      item.addEventListener('click', () => {
+        // Reset all items to normal size
+        menuItems.forEach(i => {
+          i.querySelector('img').classList.remove('h-48');
+          i.querySelector('img').classList.add('h-40');
+          i.querySelector('p.text-sm').classList.remove('text-lg');
+          i.querySelector('p.font-semibold').classList.remove('text-lg', 'border-2', 'border-red-500');
+          i.classList.remove('shadow-lg');
+        });
+        // Enlarge clicked item
+        item.querySelector('img').classList.remove('h-40');
+        item.querySelector('img').classList.add('h-48');
+        item.querySelector('p.text-sm').classList.add('text-lg');
+        item.querySelector('p.font-semibold').classList.add('text-lg', 'border-2', 'border-red-500');
+        item.classList.add('shadow-lg');
+        // Play audio and show text
+        const audioSrc = item.getAttribute('data-audio');
+        const text = item.getAttribute('data-text');
+        menuAudio.src = audioSrc;
+        menuAudio.play();
+        item.querySelector('p.text-sm').classList.remove('hidden');
+        replayButton.classList.remove('hidden');
+        replayButton.onclick = () => menuAudio.play();
+      });
+    });
+
+    orderAgainButton.addEventListener('click', () => {
+      orderVideo.currentTime = 0;
+      orderVideo.play();
+      startButton.classList.remove('hidden');
+      menuItems.forEach(item => {
+        item.classList.add('opacity-50', 'pointer-events-none');
+        item.querySelector('p.text-sm').classList.add('hidden');
+        item.querySelector('img').classList.remove('h-48');
+        item.querySelector('img').classList.add('h-40');
+        item.querySelector('p.text-sm').classList.remove('text-lg');
+        item.querySelector('p.font-semibold').classList.remove('text-lg', 'border-2', 'border-red-500');
+        item.classList.remove('shadow-lg');
+      });
+      replayButton.classList.add('hidden');
+      menuAudio.pause();
+      menuAudio.src = '';
+    });
+
+    menuItems.forEach(item => item.classList.add('opacity-50', 'pointer-events-none'));
+
+    // Cashier Mode
+    function startLevel(level) {
+      levelTitle.textContent = `Level ${level + 1}/${levels.length}`;
+      cashierVideo.src = levels[level].video;
+      cashierVideo.play();
+      feedback.textContent = '';
+      nextLevelButton.classList.add('hidden');
+      cashierItems.forEach(item => {
+        item.classList.remove('opacity-50', 'pointer-events-none');
+        item.querySelector('img').classList.remove('h-48');
+        item.querySelector('img').classList.add('h-40');
+        item.querySelector('p.font-semibold').classList.remove('text-lg', 'border-2', 'border-green-500');
+        item.classList.remove('shadow-lg');
+      });
+    }
+
+    cashierItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const selectedItem = item.getAttribute('data-item');
+        if (selectedItem === levels[currentLevel].correctItem) {
+          // Enlarge correct item
+          item.querySelector('img').classList.remove('h-40');
+          item.querySelector('img').classList.add('h-48');
+          item.querySelector('p.font-semibold').classList.add('text-lg', 'border-2', 'border-green-500');
+          item.classList.add('shadow-lg');
+          feedback.textContent = 'Correct!';
+          feedback.classList.add('text-green-600');
+          cashierItems.forEach(i => i.classList.add('opacity-50', 'pointer-events-none'));
+          if (currentLevel < levels.length - 1) {
+            nextLevelButton.classList.remove('hidden');
+          } else {
+            feedback.textContent = 'Congratulations! You completed all levels!';
+            restartButton.classList.remove('hidden');
+          }
+        } else {
+          feedback.textContent = 'Try again!';
+          feedback.classList.add('text-red-600');
+        }
+      });
+    });
+
+    nextLevelButton.addEventListener('click', () => {
+      currentLevel++;
+      startLevel(currentLevel);
+    });
+
+    restartButton.addEventListener('click', () => {
+      currentLevel = 0;
+      startLevel(currentLevel);
+      restartButton.classList.add('hidden');
+    });
+  </script>
+</body>
+</html>
